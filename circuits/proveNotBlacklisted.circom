@@ -1,9 +1,11 @@
+pragma circom 2.0.0;
+
 include "../node_modules/circomlib/circuits/poseidon.circom";
 include "./sparseMerkleTree.circom";
 
 template ProveNotBlacklisted(TREE_DEPTH) {
-  signal private input IMEI;
-  signal private input path_elements[TREE_DEPTH];
+  signal input IMEI;
+  signal input path_elements[TREE_DEPTH];
   signal output root;
 
   component hasher = Poseidon(1);

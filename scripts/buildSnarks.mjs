@@ -1,6 +1,5 @@
 import fs from 'fs'
 import path from 'path'
-import circom from 'circom'
 import * as snarkjs from 'snarkjs'
 import * as fastFile from 'fastfile'
 import url from 'url'
@@ -12,7 +11,7 @@ import {
 } from '../config.mjs'
 
 const circuitContents = {
-    proveNotBlacklisted: `include "../circuits/proveNotBlacklisted.circom" \n\ncomponent main = ProveNotBlacklisted(${TREE_DEPTH})`,
+    proveNotBlacklisted: `pragma circom 2.0.0; include "../circuits/proveNotBlacklisted.circom"; \n\ncomponent main = ProveNotBlacklisted(${TREE_DEPTH});`,
 }
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
@@ -84,7 +83,7 @@ for (const name of circuits) {
         console.log('Exporting verification key...')
         await snarkjs.zKey.newZKey(circuitOut, ptau, zkey)
         const vkeyJson = await snarkjs.zKey.exportVerificationKey(zkey)
-        const S = JSON.stringify(stringifyBigInts(vkeyJson), null, 1)
+        const S = JSON.stringify(vkeyJson, null, 1)
         await fs.promises.writeFile(vkOut, S)
         console.log(
             `Generated ${zkey.split('/').pop()} and ${vkOut.split('/').pop()}`
