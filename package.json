@@ -12,7 +12,6 @@
   "license": "MIT",
   "dependencies": {
     "@unirep/crypto": "^1.0.0",
-    "circom": "^0.5.46",
     "circomlib": "^0.5.3",
     "snarkjs": "^0.4.27"
   }

@@ -37,12 +37,14 @@ for (const name of circuits) {
         path.join(outDir, `${name}_main.circom`),
         circuitContents[name]
     )
+    console.log(outDir)
 
-    const inputFile = path.join(outDir, `${name}_main.circom`)
-    const circuitOut = path.join(outDir, `${name}.r1cs`)
-    const symOut = path.join(outDir, `${name}.sym`)
-    const wasmOut = path.join(outDir, `${name}.wasm`)
     const ptau = path.join(outDir, `powersOfTau28_hez_final_17.ptau`)
+    const inputFile = path.join(outDir, `${name}_main.circom`)
+    const circuitOut = path.join(outDir, `${name}_main.r1cs`)
+    const wasmOut = path.join(outDir, `${name}_main_js/${name}_main.wasm`)
+    const wasmOutDir = path.join(outDir, `${name}_main_js`)
+    const wasmOutFinal = path.join(outDir, `${name}.wasm`)
     const zkey = path.join(outDir, `${name}.zkey`)
     const vkOut = path.join(outDir, `${name}.vkey.json`)
 
@@ -58,12 +60,15 @@ for (const name of circuits) {
     } else {
         console.log(`Compiling ${inputFile.split('/').pop()}...`)
         // Compile the .circom file
-        const options = {
-            wasmFile: await fastFile.createOverride(wasmOut),
-            r1csFileName: circuitOut,
-            symWriteStream: fs.createWriteStream(symOut),
-        }
-        await circom.compiler(inputFile, options)
+        await new Promise((rs, rj) =>
+            child_process.exec(
+                `circom --r1cs --wasm -o ${outDir} ${inputFile}`,
+                (err, stdout, stderr) => {
+                    if (err) rj(err)
+                    else rs()
+                }
+            )
+        )
         console.log(
             'Generated',
             circuitOut.split('/').pop(),
@@ -79,11 +84,13 @@ for (const name of circuits) {
         console.log('Exporting verification key...')
         await snarkjs.zKey.newZKey(circuitOut, ptau, zkey)
         const vkeyJson = await snarkjs.zKey.exportVerificationKey(zkey)
-        const S = JSON.stringify(vkeyJson, null, 1)
+        const S = JSON.stringify(stringifyBigInts(vkeyJson), null, 1)
         await fs.promises.writeFile(vkOut, S)
         console.log(
             `Generated ${zkey.split('/').pop()} and ${vkOut.split('/').pop()}`
         )
+        await fs.promises.rename(wasmOut, wasmOutFinal)
+        await fs.promises.rm(wasmOutDir, { recursive: true, force: true })
     }
 }
 
