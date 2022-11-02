@@ -2,7 +2,7 @@ import path from 'path'
 import url from 'url'
 import fs from 'fs'
 import * as snarkjs from 'snarkjs'
-import { SparseMerkleTree, hash1 } from '@unirep/crypto'
+import { IncrementalMerkleTree, SparseMerkleTree, hash1, hash2, hash3, hash4 } from '@unirep/crypto'
 import { TREE_DEPTH } from './config.mjs'
 import crypto from 'crypto'
 
@@ -82,6 +82,57 @@ console.log(`Tree root with 100 entries: ${tree.root}`)
   if (!isValid) throw new Error('Generated invalid proof')
   console.log(`Generated proof in ${end-start} ms`)
   console.log(`Root for blacklisted IMEI: ${publicSignals[0]} (should mismatch above root)`)
+}
+
+{
+  const paymentTree = new SparseMerkleTree(TREE_DEPTH)
+  const nullifierMap = {}
+  const payCycle = 30
+
+  const myIdNullifier = randomHex()
+  const myIdTrapdoor = randomHex()
+
+  let myRid;
+  let leafIndex;
+  let myPayId;
+  for (let x = 0; x < 50; x++) {
+    const rid = randomHex()
+    const payId = randomHex()
+    paymentTree.update(BigInt(x), hash3([rid, payId, payCycle]))
+    if (x === 12) {
+      leafIndex = x
+      myRid = rid
+      myPayId = payId
+    }
+    const nullifier = hash4([rid,payId, payCycle, 12])
+    nullifierMap[nullifier.toString()] = true
+  }
+  const start = +new Date()
+
+  const {proof, publicSignals} = await genProofAndPublicSignals("proofOfPayment", {
+    rid: myRid,
+    payId: myPayId,
+    payCycle: payCycle,
+    merkleProof: paymentTree.createProof(BigInt(12)),
+    idNullifier: myIdNullifier,
+    idTrapdoor: myIdTrapdoor,
+    leafIndex: 12,
+  })
+
+  const isValid = await verifyProof('proofOfPayment', publicSignals, proof)
+  const end = +new Date()
+  if (!isValid) throw new Error('Generated invalid proof')
+  console.log(`Generated proof in ${end-start} ms`)
+  console.log(`Root for payment: ${publicSignals[0]}`)
+
+  const isPaymentRootValid = publicSignals[0].toString() === paymentTree.root.toString()
+  console.log(isPaymentRootValid)
+  const isIdentityValid = hash1([hash2([myIdNullifier, myIdTrapdoor])]).toString() === publicSignals[1].toString()
+  console.log(isIdentityValid)
+  console.log(`pub signal 2: ${publicSignals[2].toString()}`)
+  console.log(nullifierMap)
+  const isPaymentLeafNullifierValid = Object.keys(nullifierMap).indexOf(publicSignals[2].toString()) !== -1
+  console.log(isPaymentLeafNullifierValid)
 }
 
 process.exit(0)
