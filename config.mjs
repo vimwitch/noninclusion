@@ -1,1 +1,1 @@
-export const TREE_DEPTH = 128
+export const TREE_DEPTH = 256
