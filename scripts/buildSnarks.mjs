@@ -12,6 +12,7 @@ import {
 
 const circuitContents = {
     proveNotBlacklisted: `pragma circom 2.0.0; include "../circuits/proveNotBlacklisted.circom"; \n\ncomponent main = ProveNotBlacklisted(${TREE_DEPTH});`,
+    proofOfPayment: `pragma circom 2.0.0; include "../circuits/proofOfPayment.circom"; \n\ncomponent main = ProofOfPayment(${TREE_DEPTH}, 12);`,
 }
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
